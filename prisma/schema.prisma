@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SubmissionCategory {
+  CASUAL_BROWSER
+  EARLY_INTEREST
+  CONSIDERATION_STAGE
+  SERIOUS_BUYER
+  HIGH_INTENT_BUYER
+}
+
+model Submission {
+  id                String               @id @default(cuid())
+  industry          String
+  leadName          String?
+  leadEmail         String?
+  leadPhone         String?
+  leadCity          String?
+  financePreference String?
+  purchaseTimeline  String?
+  rawPayload        Json
+  normalizedAnswers Json
+  webhookEvent      Json
+  totalScore        Int
+  category          SubmissionCategory
+  positives         Json
+  negatives         Json
+  recommendedAction String
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  scoreBreakdown    ScoreBreakdown?
+  behaviouralMetrics BehaviouralMetrics?
+  metadata          LeadMetadata?
+
+  @@index([industry, totalScore])
+  @@index([category, createdAt])
+  @@index([financePreference, purchaseTimeline])
+}
+
+model ScoreBreakdown {
+  id                String     @id @default(cuid())
+  submissionId      String     @unique
+  behaviouralScore  Int
+  interactionScore  Int
+  consistencyScore  Int
+  economicScore     Int
+  submission        Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model BehaviouralMetrics {
+  id                     String     @id @default(cuid())
+  submissionId           String     @unique
+  totalCompletionSeconds Int?
+  timePerStepSeconds     Json?
+  backtracks             Int?
+  answerEdits            Int?
+  idlePauses             Int?
+  tabSwitches            Int?
+  scrollDepthPercent     Int?
+  completionRatePercent  Int?
+  submission             Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model LeadMetadata {
+  id           String     @id @default(cuid())
+  submissionId String     @unique
+  source       String?
+  campaign     String?
+  formId       String?
+  sessionId    String?
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model IndustryModel {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  displayName        String
+  version            String
+  supportedQuestions Json
+  scoreBands         Json
+  config             Json
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}

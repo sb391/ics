@@ -1,7 +1,7 @@
 import { Router, type RequestHandler } from "express";
 
 import { parseWithSchema } from "../../lib/http";
-import { submissionListQuerySchema, submissionPayloadSchema } from "./submission.schemas";
+import { submissionListQuerySchema, submissionOutcomeSchema, submissionPayloadSchema } from "./submission.schemas";
 import { SubmissionService } from "./submission.service";
 
 export function createSubmissionHandlers(submissionService: SubmissionService): Record<string, RequestHandler> {
@@ -54,6 +54,26 @@ export function createSubmissionHandlers(submissionService: SubmissionService): 
       } catch (error) {
         next(error);
       }
+    },
+
+    async trackOutcome(request, response, next) {
+      try {
+        const submissionId = Array.isArray(request.params.id)
+          ? request.params.id[0]
+          : request.params.id;
+        const payload = parseWithSchema(
+          submissionOutcomeSchema,
+          request.body,
+          "INVALID_OUTCOME_PAYLOAD"
+        );
+        const result = await submissionService.trackOutcome(submissionId, {
+          ...payload,
+          happenedAt: payload.happenedAt ?? new Date().toISOString()
+        });
+        response.status(200).json(result);
+      } catch (error) {
+        next(error);
+      }
     }
   };
 }
@@ -66,6 +86,7 @@ export function createSubmissionRouter(submissionService: SubmissionService) {
   router.post("/submissions", handlers.create);
   router.get("/submissions", handlers.list);
   router.get("/submissions/:id", handlers.getById);
+  router.post("/submissions/:id/outcomes", handlers.trackOutcome);
 
   return router;
 }

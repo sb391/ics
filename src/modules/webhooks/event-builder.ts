@@ -1,6 +1,12 @@
 import { randomUUID } from "crypto";
 
-import { getIntentBandFromSlug, type IntentCategorySlug, type ScoreBreakdown, type ScorePayload } from "../scoring/scoring.types";
+import {
+  getIntentBandFromSlug,
+  type IntentCategorySlug,
+  type PredictionContext,
+  type ScoreBreakdown,
+  type ScorePayload
+} from "../scoring/scoring.types";
 import type { SubmissionScoredEvent } from "../submissions/submission.types";
 
 interface BuildWebhookEventInput {
@@ -12,9 +18,15 @@ interface BuildWebhookEventInput {
   breakdown: ScoreBreakdown;
   positives: string[];
   negatives: string[];
+  scoreVersion: string;
+  weightVersion: string;
+  ruleSetVersion: string;
+  predictionContext: PredictionContext;
   metadata: ScorePayload["metadata"];
   financePreference?: string;
   purchaseTimeline?: string;
+  purchaseReason?: string;
+  testDriveReadiness?: string;
 }
 
 export function buildSubmissionScoredEvent(input: BuildWebhookEventInput): SubmissionScoredEvent {
@@ -37,9 +49,15 @@ export function buildSubmissionScoredEvent(input: BuildWebhookEventInput): Submi
       breakdown: input.breakdown,
       positives: input.positives,
       negatives: input.negatives,
+      scoreVersion: input.scoreVersion,
+      weightVersion: input.weightVersion,
+      ruleSetVersion: input.ruleSetVersion,
       financePreference: input.financePreference,
       purchaseTimeline: input.purchaseTimeline,
-      metadata: input.metadata
+      purchaseReason: input.purchaseReason,
+      testDriveReadiness: input.testDriveReadiness,
+      metadata: input.metadata,
+      predictionContext: input.predictionContext
     }
   };
 }

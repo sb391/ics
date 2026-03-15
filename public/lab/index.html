@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ICS Scoring Lab</title>
+    <link rel="stylesheet" href="/lab/styles.css" />
+    <script defer src="/lab/lab.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Intent Confidence Score</p>
+          <h1>Auto Scoring Lab</h1>
+          <p class="hero-copy">
+            Test anonymous buyer-demand scenarios against the API, inspect the breakdown, and tune
+            the scoring rules with faster feedback.
+          </p>
+          <div id="weight-strip" class="weight-strip"></div>
+        </div>
+        <div class="hero-actions">
+          <span id="health-pill" class="pill pill-muted">Checking API...</span>
+          <a class="ghost-link" href="/review">Review Queue</a>
+          <a class="ghost-link" href="/docs" target="_blank" rel="noreferrer">Swagger Docs</a>
+          <a class="ghost-link" href="/docs/openapi.json" target="_blank" rel="noreferrer">OpenAPI JSON</a>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="panel panel-form">
+          <div class="panel-header">
+            <div>
+              <p class="section-kicker">Scenario Builder</p>
+              <h2>Anonymous Demand Input</h2>
+              <p class="section-note">
+                No customer PII is collected here. Focus on purchase intent, demand clarity,
+                funding readiness, and behavioural quality. The form now opens blank; use presets
+                only if you want starting examples.
+              </p>
+            </div>
+            <div class="preset-actions" id="preset-actions"></div>
+          </div>
+
+          <form id="score-form" class="stack">
+            <div class="card-grid">
+              <section class="card">
+                <h3>Demand Context</h3>
+                <div class="field-grid">
+                  <label>
+                    <span>Purchase Timeline</span>
+                    <select id="purchase-timeline"></select>
+                  </label>
+                  <label>
+                    <span>Purchase Reason</span>
+                    <select id="purchase-reason"></select>
+                  </label>
+                  <label>
+                    <span>Primary Preference</span>
+                    <select id="primary-preference"></select>
+                  </label>
+                  <label>
+                    <span>Usage Pattern</span>
+                    <select id="usage-pattern"></select>
+                  </label>
+                  <label>
+                    <span>Body Style</span>
+                    <select id="body-style"></select>
+                  </label>
+                  <label>
+                    <span>Fuel Type</span>
+                    <select id="fuel-type"></select>
+                  </label>
+                  <label>
+                    <span>Monthly KM Band</span>
+                    <select id="monthly-km-band"></select>
+                  </label>
+                  <label>
+                    <span>Current Vehicle Age</span>
+                    <select id="current-vehicle-age-band"></select>
+                  </label>
+                </div>
+              </section>
+
+              <section class="card">
+                <h3>Shortlist Specificity</h3>
+                <div class="field-grid">
+                  <label>
+                    <span>Budget Range</span>
+                    <select id="budget-range"></select>
+                  </label>
+                  <label>
+                    <span>Variant Clarity</span>
+                    <select id="variant-clarity"></select>
+                  </label>
+                  <label>
+                    <span>Test Drive Readiness</span>
+                    <select id="test-drive-readiness"></select>
+                  </label>
+                  <label>
+                    <span>Decision Maker</span>
+                    <select id="decision-maker"></select>
+                  </label>
+                </div>
+                <div class="brand-selector">
+                  <div class="selector-header">
+                    <p>Brands Comparing</p>
+                    <span id="brand-selection-meta" class="selection-meta">0/5 selected</span>
+                  </div>
+                  <div id="brands-comparing" class="brand-options"></div>
+                </div>
+              </section>
+
+              <section class="card">
+                <h3>Funding Readiness</h3>
+                <div class="field-grid">
+                  <label>
+                    <span>Finance Preference</span>
+                    <select id="finance-preference"></select>
+                  </label>
+                  <label>
+                    <span>Monthly EMI Comfort</span>
+                    <select id="monthly-emi-comfort-band"></select>
+                  </label>
+                  <label>
+                    <span>Down Payment Band</span>
+                    <select id="down-payment-band"></select>
+                  </label>
+                  <label>
+                    <span>Salary Band</span>
+                    <select id="salary-band"></select>
+                  </label>
+                  <label>
+                    <span>Trade-in Available</span>
+                    <select id="trade-in-available"></select>
+                  </label>
+                </div>
+              </section>
+
+              <section class="card">
+                <h3>Behavioural Metrics</h3>
+                <p class="section-note section-note-inline">
+                  Optional. If your frontend does not send these yet, ICS will infer basic completion
+                  coverage from the declaration answers.
+                </p>
+                <div class="field-grid">
+                  <label>
+                    <span>Total Completion Seconds</span>
+                    <input id="metric-total-completion" type="number" min="0" step="1" />
+                  </label>
+                  <label>
+                    <span>Backtracks</span>
+                    <input id="metric-backtracks" type="number" min="0" step="1" />
+                  </label>
+                  <label>
+                    <span>Answer Edits</span>
+                    <input id="metric-answer-edits" type="number" min="0" step="1" />
+                  </label>
+                  <label>
+                    <span>Idle Pauses</span>
+                    <input id="metric-idle-pauses" type="number" min="0" step="1" />
+                  </label>
+                  <label>
+                    <span>Tab Switches</span>
+                    <input id="metric-tab-switches" type="number" min="0" step="1" />
+                  </label>
+                  <label>
+                    <span>Scroll Depth %</span>
+                    <input id="metric-scroll-depth" type="number" min="0" max="100" step="1" />
+                  </label>
+                  <label>
+                    <span>Completion Rate %</span>
+                    <input id="metric-completion-rate" type="number" min="0" max="100" step="1" />
+                  </label>
+                </div>
+                <div class="step-metrics">
+                  <div class="step-metrics-header">
+                    <p>Time Per Step</p>
+                    <button id="autofill-times" class="mini-button" type="button">
+                      Autofill Answered Fields
+                    </button>
+                  </div>
+                  <div class="field-grid compact" id="time-per-step-grid"></div>
+                </div>
+              </section>
+
+              <section class="card">
+                <h3>Auto-Captured Context</h3>
+                <p class="section-note section-note-inline">
+                  These values are auto-filled for local testing. You should not need to touch them
+                  to run score analysis.
+                </p>
+                <div class="field-grid">
+                  <label>
+                    <span>Source</span>
+                    <input id="meta-source" type="text" placeholder="dealer_website" />
+                  </label>
+                  <label>
+                    <span>Campaign</span>
+                    <input id="meta-campaign" type="text" placeholder="march_auto_campaign" />
+                  </label>
+                  <label>
+                    <span>Form ID</span>
+                    <input id="meta-form-id" type="text" placeholder="lead_form_1" />
+                  </label>
+                  <label>
+                    <span>Session ID</span>
+                    <input id="meta-session-id" type="text" placeholder="sess_123" />
+                  </label>
+                  <label>
+                    <span>Channel</span>
+                    <select id="meta-channel"></select>
+                  </label>
+                  <label>
+                    <span>SDK Version</span>
+                    <input id="meta-sdk-version" type="text" placeholder="lab-0.2" />
+                  </label>
+                </div>
+              </section>
+            </div>
+
+            <div class="action-bar">
+              <button id="score-button" class="primary-button" type="submit">Score Scenario</button>
+              <button id="store-button" class="secondary-button" type="button">Store Submission</button>
+              <button id="reset-button" class="ghost-button" type="button">Clear Form</button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="panel panel-results">
+          <div class="panel-header">
+            <div>
+              <p class="section-kicker">Live Output</p>
+              <h2>Intent Analysis</h2>
+            </div>
+          </div>
+
+          <section class="score-hero">
+            <div class="score-orbit">
+              <span class="score-caption">Intent score</span>
+              <strong id="score-total">--</strong>
+              <span id="score-category">No result yet</span>
+            </div>
+            <div class="score-summary">
+              <p id="score-action" class="action-copy">Submit a scenario to see recommended action.</p>
+              <p id="score-created-at" class="timestamp"></p>
+            </div>
+          </section>
+
+          <section class="card">
+            <h3>Breakdown</h3>
+            <div id="breakdown-bars" class="breakdown-bars"></div>
+            <div id="breakdown-explainer" class="breakdown-explainer">
+              Click a section to inspect why it scored the way it did.
+            </div>
+          </section>
+
+          <section class="two-up">
+            <section class="card">
+              <h3>Positive Signals</h3>
+              <ul id="positive-list" class="signal-list"></ul>
+            </section>
+            <section class="card">
+              <h3>Negative Signals</h3>
+              <ul id="negative-list" class="signal-list"></ul>
+            </section>
+          </section>
+
+          <section class="card">
+            <div class="card-headline">
+              <h3>Normalized Interpretation</h3>
+              <button id="copy-payload" class="mini-button" type="button">Copy Payload</button>
+            </div>
+            <div id="normalized-grid" class="insight-grid"></div>
+          </section>
+
+          <details class="card detail-card">
+            <summary>Response Preview</summary>
+            <pre id="response-preview" class="json-block">No API response yet.</pre>
+          </details>
+        </aside>
+      </main>
+
+      <section class="panel panel-history">
+        <div class="panel-header">
+          <div>
+            <p class="section-kicker">Stored Runs</p>
+            <h2>Submission Explorer</h2>
+          </div>
+          <button id="refresh-submissions" class="secondary-button" type="button">Refresh</button>
+        </div>
+
+        <div class="history-layout">
+          <section class="card">
+            <h3>Filters</h3>
+            <div class="field-grid">
+              <label>
+                <span>Min Score</span>
+                <input id="filter-min-score" type="number" min="0" max="100" step="1" />
+              </label>
+              <label>
+                <span>Max Score</span>
+                <input id="filter-max-score" type="number" min="0" max="100" step="1" />
+              </label>
+              <label>
+                <span>Category</span>
+                <select id="filter-category"></select>
+              </label>
+              <label>
+                <span>Timeline</span>
+                <select id="filter-timeline"></select>
+              </label>
+              <label>
+                <span>Finance Preference</span>
+                <select id="filter-finance"></select>
+              </label>
+              <label>
+                <span>Sort</span>
+                <select id="filter-sort">
+                  <option value="createdAt:desc">Newest first</option>
+                  <option value="createdAt:asc">Oldest first</option>
+                  <option value="score:desc">Highest score</option>
+                  <option value="score:asc">Lowest score</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section class="card table-card">
+            <div class="card-headline">
+              <h3>Submissions</h3>
+              <span id="submissions-meta" class="meta-copy">No stored submissions yet.</span>
+            </div>
+            <div class="table-shell">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Demand</th>
+                    <th>Score</th>
+                    <th>Category</th>
+                    <th>Timeline</th>
+                    <th>Finance</th>
+                    <th>Created</th>
+                  </tr>
+                </thead>
+                <tbody id="submissions-table-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card">
+            <h3>Selected Submission</h3>
+            <div id="selected-submission-summary" class="selected-summary">
+              Select a stored submission to inspect its raw payload and webhook preview.
+            </div>
+            <details class="detail-card detail-card-embedded">
+              <summary>Submission JSON</summary>
+              <pre id="selected-submission-json" class="json-block">No submission selected.</pre>
+            </details>
+          </section>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

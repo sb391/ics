@@ -15,32 +15,90 @@ enum SubmissionCategory {
   HIGH_INTENT_BUYER
 }
 
+enum OutcomeStatus {
+  CONTACTED
+  QUALIFIED
+  VISIT_BOOKED
+  FINANCE_APPLIED
+  CONVERTED
+  REJECTED
+  JUNK
+}
+
+enum RuleDirection {
+  POSITIVE
+  NEGATIVE
+}
+
+enum ScoreLayer {
+  BEHAVIOURAL
+  INTERACTION
+  DEMAND
+  CONSISTENCY
+  READINESS
+}
+
+enum DealerMatchStatus {
+  PENDING
+  MATCHED
+  UNMATCHED
+  MANUAL_REVIEW
+}
+
+enum RoutingStatus {
+  CAPTURED
+  READY_FOR_ASSIGNMENT
+  ASSIGNED
+}
+
 model Submission {
-  id                String               @id @default(cuid())
-  industry          String
-  leadName          String?
-  leadEmail         String?
-  leadPhone         String?
-  leadCity          String?
-  financePreference String?
-  purchaseTimeline  String?
-  rawPayload        Json
-  normalizedAnswers Json
-  webhookEvent      Json
-  totalScore        Int
-  category          SubmissionCategory
-  positives         Json
-  negatives         Json
-  recommendedAction String
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  scoreBreakdown    ScoreBreakdown?
+  id                 String                @id @default(cuid())
+  industry           String
+  financePreference  String?
+  purchaseTimeline   String?
+  purchaseReason     String?
+  testDriveReadiness String?
+  scoreVersion       String
+  weightVersion      String
+  ruleSetVersion     String
+  currentOutcomeStatus OutcomeStatus?
+  outcomeUpdatedAt   DateTime?
+  rawPayload         Json
+  normalizedAnswers  Json
+  webhookEvent       Json
+  totalScore         Int
+  category           SubmissionCategory
+  positives          Json
+  negatives          Json
+  recommendedAction  String
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  scoreBreakdown     ScoreBreakdown?
   behaviouralMetrics BehaviouralMetrics?
-  metadata          LeadMetadata?
+  metadata           LeadMetadata?
+  routingProfile     DealerRoutingProfile?
+  consentRecord      SubmissionConsent?
+  ruleContributions  RuleContribution[]
+  outcomes           SubmissionOutcome[]
 
   @@index([industry, totalScore])
   @@index([category, createdAt])
   @@index([financePreference, purchaseTimeline])
+  @@index([currentOutcomeStatus, outcomeUpdatedAt])
+}
+
+model AnalyticsSnapshot {
+  id                  String   @id @default(cuid())
+  snapshotDate        String   @unique
+  generatedAt         DateTime
+  totalSubmissions    Int
+  labeledSubmissions  Int
+  convertedSubmissions Int
+  payload             Json
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([snapshotDate])
 }
 
 model ScoreBreakdown {
@@ -48,8 +106,9 @@ model ScoreBreakdown {
   submissionId      String     @unique
   behaviouralScore  Int
   interactionScore  Int
+  demandScore       Int
   consistencyScore  Int
-  economicScore     Int
+  readinessScore    Int
   submission        Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 }
 
@@ -74,7 +133,41 @@ model LeadMetadata {
   campaign     String?
   formId       String?
   sessionId    String?
+  channel      String?
+  sdkVersion   String?
   submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model DealerRoutingProfile {
+  id                String            @id @default(cuid())
+  submissionId      String            @unique
+  pincode           String
+  city              String
+  locality          String
+  addressLine       String?
+  assignedDealerId  String?
+  matchedDealerName String?
+  dealerMatchStatus DealerMatchStatus @default(PENDING)
+  routingStatus     RoutingStatus     @default(CAPTURED)
+  matchedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  submission        Submission        @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([pincode, city])
+  @@index([dealerMatchStatus, routingStatus])
+}
+
+model SubmissionConsent {
+  id                   String     @id @default(cuid())
+  submissionId         String     @unique
+  dealerContactConsent Boolean
+  consentedAt          DateTime
+  privacyNoticeVersion String?
+  consentSource        String?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  submission           Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 }
 
 model IndustryModel {
@@ -87,4 +180,36 @@ model IndustryModel {
   config             Json
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+}
+
+model RuleContribution {
+  id               String        @id @default(cuid())
+  submissionId     String
+  sequence         Int
+  ruleCode         String
+  layer            ScoreLayer
+  direction        RuleDirection
+  points           Int
+  reason           String
+  signalCategories String[]
+  createdAt        DateTime      @default(now())
+  submission       Submission    @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId, sequence])
+  @@index([ruleCode])
+  @@index([layer])
+}
+
+model SubmissionOutcome {
+  id           String        @id @default(cuid())
+  submissionId String
+  status       OutcomeStatus
+  note         String?
+  source       String?
+  happenedAt   DateTime
+  createdAt    DateTime      @default(now())
+  submission   Submission    @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId, happenedAt])
+  @@index([status, happenedAt])
 }

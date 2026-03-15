@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-paper bg-warm-radial text-ink antialiased;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(169, 82, 43, 0.35) transparent;
+}
+
+::selection {
+  background: rgba(169, 82, 43, 0.14);
+}
+
+.mesh-panel {
+  background-image:
+    radial-gradient(circle at top right, rgba(212, 109, 54, 0.1), transparent 35%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 250, 245, 0.96));
+}
+
+.signal-pill {
+  @apply inline-flex items-center rounded-full border border-black/5 bg-white/80 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-slate;
+}
+
+.question-grid {
+  @apply grid gap-3 md:grid-cols-2;
+}

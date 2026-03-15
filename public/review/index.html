@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ICS Review Queue</title>
+    <link rel="stylesheet" href="/review/styles.css" />
+    <script defer src="/review/review.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="masthead panel">
+        <div>
+          <p class="eyebrow">Intent Confidence Score</p>
+          <h1>Review Queue</h1>
+          <p class="lede">
+            Review predictions submission by submission, attach manual outcomes, and preserve daily
+            validation snapshots while the model is still under validation.
+          </p>
+        </div>
+        <div class="masthead-actions">
+          <span id="health-pill" class="pill pill-muted">Checking API...</span>
+          <a class="ghost-link" href="/lab">Scoring Lab</a>
+          <a class="ghost-link" href="/docs" target="_blank" rel="noreferrer">Swagger Docs</a>
+          <a class="ghost-link" href="/docs/openapi.json" target="_blank" rel="noreferrer">OpenAPI JSON</a>
+        </div>
+      </header>
+
+      <section class="summary-grid">
+        <article class="panel metric-card">
+          <span class="metric-label">Total submissions</span>
+          <strong id="metric-total-submissions" class="metric-value">--</strong>
+          <p class="metric-meta">All scored submissions captured so far.</p>
+        </article>
+        <article class="panel metric-card">
+          <span class="metric-label">Labeled submissions</span>
+          <strong id="metric-labeled-submissions" class="metric-value">--</strong>
+          <p class="metric-meta">Submissions with at least one downstream outcome.</p>
+        </article>
+        <article class="panel metric-card">
+          <span class="metric-label">Labeled conversion rate</span>
+          <strong id="metric-conversion-rate" class="metric-value">--</strong>
+          <p class="metric-meta">Converted share of labeled submissions only.</p>
+        </article>
+        <article class="panel metric-card">
+          <span class="metric-label">Score gap</span>
+          <strong id="metric-score-gap" class="metric-value">--</strong>
+          <p class="metric-meta">Converted average score minus non-converted average score.</p>
+        </article>
+      </section>
+
+      <section class="control-grid">
+        <article class="panel intelligence-panel">
+          <div class="panel-headline">
+            <div>
+              <p class="section-kicker">Live validation</p>
+              <h2>Model posture</h2>
+            </div>
+            <button id="refresh-analytics-button" class="mini-button" type="button">Refresh</button>
+          </div>
+          <p id="posture-note" class="note-copy">
+            ICS is an explainable prediction under validation against actual outcomes.
+          </p>
+          <div class="insight-columns">
+            <section>
+              <div class="section-row">
+                <h3>Top-performing rules</h3>
+                <span id="top-rules-count" class="count-pill">0</span>
+              </div>
+              <ul id="top-rules-list" class="rule-list compact"></ul>
+            </section>
+            <section>
+              <div class="section-row">
+                <h3>Weakest rules</h3>
+                <span id="weakest-rules-count" class="count-pill">0</span>
+              </div>
+              <ul id="weakest-rules-list" class="rule-list compact"></ul>
+            </section>
+          </div>
+        </article>
+
+        <article class="panel snapshot-panel">
+          <div class="panel-headline">
+            <div>
+              <p class="section-kicker">Saved snapshots</p>
+              <h2>Validation history</h2>
+            </div>
+          </div>
+          <div class="snapshot-actions">
+            <label>
+              <span>Snapshot date</span>
+              <input id="snapshot-date" type="date" />
+            </label>
+            <button id="save-snapshot-button" class="primary-button" type="button">Save daily snapshot</button>
+          </div>
+          <div id="snapshot-list" class="snapshot-list"></div>
+          <div id="snapshot-detail" class="snapshot-detail empty">No saved snapshot selected.</div>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <aside class="panel queue-panel">
+          <div class="panel-headline">
+            <div>
+              <p class="section-kicker">Queue</p>
+              <h2>Submission review list</h2>
+            </div>
+            <button id="refresh-queue-button" class="mini-button" type="button">Refresh queue</button>
+          </div>
+          <form id="queue-filters" class="filter-grid">
+            <label>
+              <span>Review state</span>
+              <select id="filter-review-state">
+                <option value="open">Open review</option>
+                <option value="closed">Closed review</option>
+                <option value="all">All submissions</option>
+              </select>
+            </label>
+            <label>
+              <span>Category</span>
+              <select id="filter-category">
+                <option value="">Any</option>
+              </select>
+            </label>
+            <label>
+              <span>Outcome</span>
+              <select id="filter-outcome">
+                <option value="">Any</option>
+              </select>
+            </label>
+            <label>
+              <span>Min score</span>
+              <input id="filter-min-score" type="number" min="0" max="100" step="1" />
+            </label>
+            <label>
+              <span>Sort by</span>
+              <select id="filter-sort-by">
+                <option value="createdAt">Newest</option>
+                <option value="score">Score</option>
+              </select>
+            </label>
+            <label>
+              <span>Order</span>
+              <select id="filter-sort-order">
+                <option value="desc">Descending</option>
+                <option value="asc">Ascending</option>
+              </select>
+            </label>
+            <button class="secondary-button" type="submit">Apply filters</button>
+          </form>
+          <div id="queue-summary" class="queue-summary">Loading review queue...</div>
+          <div id="queue-list" class="queue-list"></div>
+        </aside>
+
+        <section class="panel detail-panel">
+          <div id="detail-empty" class="detail-empty">
+            Pick a submission from the queue to inspect rule traces, answers, and outcome history.
+          </div>
+
+          <div id="detail-shell" class="detail-shell" hidden>
+            <header class="detail-header">
+              <div>
+                <p class="section-kicker">Submission detail</p>
+                <h2 id="detail-submission-id">Submission</h2>
+                <p id="detail-created-at" class="note-copy"></p>
+              </div>
+              <div class="detail-score">
+                <span class="metric-label">ICS</span>
+                <strong id="detail-score">--</strong>
+                <span id="detail-category" class="status-pill neutral">Not scored</span>
+              </div>
+            </header>
+
+            <div class="detail-strip">
+              <article class="surface">
+                <span class="surface-label">Recommended action</span>
+                <strong id="detail-action" class="surface-value">--</strong>
+              </article>
+              <article class="surface">
+                <span class="surface-label">Current outcome</span>
+                <strong id="detail-outcome" class="surface-value">Unlabeled</strong>
+              </article>
+              <article class="surface">
+                <span class="surface-label">Versions</span>
+                <strong id="detail-versions" class="surface-value">--</strong>
+              </article>
+            </div>
+
+            <div class="detail-grid">
+              <div class="detail-column">
+                <article class="surface">
+                  <div class="surface-headline">
+                    <h3>Outcome tagging</h3>
+                    <span class="count-pill">Manual learning</span>
+                  </div>
+                  <form id="outcome-form" class="stacked-form">
+                    <label>
+                      <span>Status</span>
+                      <select id="outcome-status"></select>
+                    </label>
+                    <label>
+                      <span>Source</span>
+                      <input id="outcome-source" type="text" placeholder="manual_review" />
+                    </label>
+                    <label>
+                      <span>Observed at</span>
+                      <input id="outcome-happened-at" type="datetime-local" />
+                    </label>
+                    <label>
+                      <span>Reviewer note</span>
+                      <textarea id="outcome-note" rows="4" placeholder="What did the team learn from this lead?"></textarea>
+                    </label>
+                    <button id="outcome-submit" class="primary-button" type="submit">Append outcome</button>
+                  </form>
+                </article>
+
+                <article class="surface">
+                  <div class="surface-headline">
+                    <h3>Outcome history</h3>
+                    <span id="outcome-journey" class="count-pill">0 events</span>
+                  </div>
+                  <div id="outcome-history" class="timeline-list"></div>
+                </article>
+
+                <article class="surface">
+                  <div class="surface-headline">
+                    <h3>Rule trace</h3>
+                    <span id="rule-trace-count" class="count-pill">0</span>
+                  </div>
+                  <ul id="rule-contribution-list" class="rule-list"></ul>
+                </article>
+              </div>
+
+              <div class="detail-column">
+                <article class="surface">
+                  <div class="surface-headline">
+                    <h3>Score breakdown</h3>
+                    <span class="count-pill">Layer view</span>
+                  </div>
+                  <div id="breakdown-bars" class="breakdown-bars"></div>
+                </article>
+
+                <article class="surface">
+                  <div class="surface-headline">
+                    <h3>Captured answers</h3>
+                    <span class="count-pill">Demand capture</span>
+                  </div>
+                  <div id="answer-grid" class="key-grid"></div>
+                </article>
+
+                <article class="surface">
+                  <div class="surface-headline">
+                    <h3>Normalized interpretation</h3>
+                    <span class="count-pill">Feature view</span>
+                  </div>
+                  <div id="normalized-grid" class="key-grid"></div>
+                </article>
+
+                <article class="surface">
+                  <div class="surface-headline">
+                    <h3>Behavioural metrics</h3>
+                    <span class="count-pill">Telemetry</span>
+                  </div>
+                  <div id="behaviour-grid" class="key-grid"></div>
+                </article>
+
+                <article class="surface">
+                  <details class="json-block">
+                    <summary>Raw payload</summary>
+                    <pre id="raw-payload-json"></pre>
+                  </details>
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+    </div>
+
+    <div id="toast" class="toast" hidden></div>
+  </body>
+</html>

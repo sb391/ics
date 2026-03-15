@@ -58,12 +58,36 @@ export type IntentCategorySlug = IntentBand["slug"];
 export type IntentCategoryPrisma = IntentBand["prisma"];
 export type IndustrySlug = "auto";
 export type ScorePayload = z.infer<typeof scorePayloadSchema>;
+export type ScoreLayer = "behavioural" | "interaction" | "demand" | "consistency" | "readiness";
+export type SignalCategory =
+  | "urgency"
+  | "clarity"
+  | "commitment"
+  | "affordability"
+  | "consistency"
+  | "purchase_readiness";
+export type RuleDirection = "positive" | "negative";
 
 export interface ScoreBreakdown {
   behaviouralScore: number;
   interactionScore: number;
+  demandScore: number;
   consistencyScore: number;
-  economicScore: number;
+  readinessScore: number;
+}
+
+export interface RuleContribution {
+  ruleCode: string;
+  layer: ScoreLayer;
+  signalCategories: SignalCategory[];
+  points: number;
+  direction: RuleDirection;
+  reason: string;
+}
+
+export interface PredictionContext {
+  posture: "prediction_under_validation";
+  note: string;
 }
 
 export interface ScoredLead {
@@ -75,6 +99,11 @@ export interface ScoredLead {
   positives: string[];
   negatives: string[];
   normalizedAnswers: Record<string, unknown>;
+  ruleContributions: RuleContribution[];
+  scoreVersion: string;
+  weightVersion: string;
+  ruleSetVersion: string;
+  predictionContext: PredictionContext;
 }
 
 export interface IndustryModelConfig {
